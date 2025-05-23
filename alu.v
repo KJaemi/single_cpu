@@ -12,7 +12,7 @@ module ALU (
     output reg  [31:0] result2,   // secondary result (e.g., high of multiply, remainder)
     output reg         OF,        // signed overflow flag
     output reg         CF         // carry/borrow flag
-    output wire        equal
+    output reg        equal
 );
     // Internal wires for each operation
     wire [4:0] shift_amt = y[4:0];
