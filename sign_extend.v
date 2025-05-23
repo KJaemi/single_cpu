@@ -1,0 +1,20 @@
+
+module SignExtend (
+    input  [15:0] in,         // 16?? immediate ?
+    input         zero_ext,   // ?? ?? ?? ??: 1?? Zero Extend, 0?? Sign Extend
+    output [31:0] out         // ??? 32?? ??
+);
+
+    wire [31:0] sign_extended;
+    wire [31:0] zero_extended;
+
+    // Sign Extension: in[15]? 16? ???? ?? 16??? ??
+    assign sign_extended = {{16{in[15]}}, in};
+
+    // Zero Extension: ?? 16??? 0?? ??
+    assign zero_extended = {16'b0, in};
+
+    // ?? ??? ?? ?? ??
+    assign out = zero_ext ? zero_extended : sign_extended;
+
+endmodule
