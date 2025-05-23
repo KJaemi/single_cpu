@@ -12,6 +12,7 @@ module ALU (
     output reg  [31:0] result2,   // secondary result (e.g., high of multiply, remainder)
     output reg         OF,        // signed overflow flag
     output reg         CF         // carry/borrow flag
+    output wire        equal
 );
     // Internal wires for each operation
     wire [4:0] shift_amt = y[4:0];
@@ -30,7 +31,7 @@ module ALU (
     // 1-bit comparators
     wire comp_s1 = ($signed(x) < $signed(y));  // signed compare, 1-bit output
     wire comp_u1 = (x < y);                   // unsigned compare, 1-bit output
-
+    assign equal = (x == y);
     // Adder/Subtractor submodules
     wire [31:0] sum;
     wire        cf_sum, of_sum;
