@@ -223,10 +223,14 @@ InstructionMemory inst_mem_mux (
                              ? branch_target
                              : pc_plus4;
 
-    // Jump Logic
-    wire [31:0] jump_target = IsJR ? RsData : next_pc;
-    assign next_pc = Jump
-                     ? {pc_plus4[31:28], instr[25:0], 2'b00}
+    // JR용 target은 무조건 RsData
+    wire [31:0] jr_target   = RsData;
+    // J, JAL용 target
+    wire [31:0] j_target    = {pc_plus4[31:28], instr[25:0], 2'b00};
+
+    // next_pc 결정: JR 우선 → J/JAL → Branch → PC+4
+    assign next_pc = IsJR          ? jr_target
+                     : Jump         ? j_target
                      : pc_branch;
 
 endmodule
