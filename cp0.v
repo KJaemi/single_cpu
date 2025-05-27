@@ -1,4 +1,3 @@
-
 `timescale 1ns/1ps
 //------------------------------------------------------------------------------
 // 1. SignalDecode: extracts ERET, sel, ExRegWrite from inst
@@ -13,7 +12,7 @@ module SignalDecode(
     assign sel        = inst[12:11];
     assign ExRegWrite = ~inst[23];
 endmodule
-//------------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 // 2. ExceptionSignals: gating, ExpClick, HasExp
 //------------------------------------------------------------------------------
@@ -29,6 +28,13 @@ module ExceptionSignals(
     output wire        expClick,
     output wire        hasExp
 );
+    // initialize registers to avoid X states
+    reg ee, ff2;
+    initial begin
+        ee  = 1'b0;
+        ff2 = 1'b0;
+    end
+
     // gate exception sources via block selectors
     wire aa = ~blocksrc0 & expSrc0;
     wire bb = ~blocksrc1 & expSrc1;
@@ -38,7 +44,6 @@ module ExceptionSignals(
     assign expClick = dd;
 
     // FF1: set on rising edge of dd, clear on rising edge of ff2
-    reg ee,ff2;
     always @(posedge dd or posedge ff2) begin
         if (ff2)
             ee <= 1'b0;
@@ -50,8 +55,7 @@ module ExceptionSignals(
     assign hasExp = ee & clk;
 
     // FF2: set on rising edge of hasExp, async clear when ee deasserts
-	wire add ;
-	assign add = ~ee;
+    wire add = ~ee;
     always @(negedge hasExp or posedge add) begin
         if (add)
             ff2 <= 1'b0;
@@ -137,15 +141,12 @@ module Registers(
     end
 
     // Dout mux
-  
-	assign Dout = (sel==2'd0)? epc :
-              (sel==2'd1)? status :
-              (sel==2'd2)? block :
-              (sel==2'd3)? cause :
-                           32'b0;
-
+    assign Dout = (sel==2'd0)? epc :
+                  (sel==2'd1)? status :
+                  (sel==2'd2)? block :
+                  (sel==2'd3)? cause :
+                               32'b0;
 endmodule
-
 
 //------------------------------------------------------------------------------
 // CP0 Top Module: integrates SignalDecode, Registers, ExceptionSignals
@@ -214,5 +215,4 @@ module CP0_Top (
         .expClick   (expClick),
         .hasExp     (HasExp)
     );
-
 endmodule
