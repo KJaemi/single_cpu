@@ -1,84 +1,81 @@
 `timescale 1ns/1ps
 
-module tb_single_cycle_cpu_top;
-    // Inputs to DUT
+module tb_single_cycle_cpu;
+    // Clock and reset
     reg         clk;
     reg         rst;
-    reg         inst_sel;
+
+    // Exception source inputs
     reg         expSrc0;
     reg         expSrc1;
     reg         expSrc2;
 
-    // Monitored signals
+    // Outputs from DUT
     wire [31:0] stat_r_count;
     wire [31:0] stat_i_count;
     wire [31:0] stat_j_count;
     wire [31:0] stat_total_count;
-    wire [31:0] tb_instr;
-    wire [5:0]  tb_opcode;
-    wire        tb_is_syscall;
-    wire [31:0] tb_a0;
-    wire [31:0] tb_hex_out;
+    wire [31:0] hex_out;
+    wire [31:0] inst_out;
+    wire [5:0]  opcode_out;
+    wire        is_syscall_out;
+    wire [31:0] a0;
 
-    // Instantiate the Device Under Test
+    // Instantiate Device Under Test
     single_cycle_cpu_top uut (
-        .clk(clk),
-        .rst(rst),
-        .inst_sel(inst_sel),
-        .expSrc0(expSrc0),
-        .expSrc1(expSrc1),
-        .expSrc2(expSrc2),
-        .stat_r_count(stat_r_count),
-        .stat_i_count(stat_i_count),
-        .stat_j_count(stat_j_count),
+        .clk             (clk),
+        .rst             (rst),
+        .expSrc0         (expSrc0),
+        .expSrc1         (expSrc1),
+        .expSrc2         (expSrc2),
+        .stat_r_count    (stat_r_count),
+        .stat_i_count    (stat_i_count),
+        .stat_j_count    (stat_j_count),
         .stat_total_count(stat_total_count),
-        .hex_out(tb_hex_out),
-        .inst_out(tb_instr),
-        .opcode_out(tb_opcode),
-        .is_syscall_out(tb_is_syscall),
-        .a0(tb_a0)
+        .hex_out         (hex_out),
+        .inst_out        (inst_out),
+        .opcode_out      (opcode_out),
+        .is_syscall_out  (is_syscall_out),
+        .a0              (a0)
     );
 
-    // Clock generation: 10 ns period
+    // Clock generation: 10ns period
     initial begin
         clk = 0;
         forever #5 clk = ~clk;
     end
 
-    // Reset and control stimuli
+    // Test sequence and monitoring
     initial begin
         rst      = 1;
-        inst_sel = 0;
         expSrc0  = 0;
         expSrc1  = 0;
         expSrc2  = 0;
-        #20;
-        rst = 0;
-    end
 
-    // Waveform dump
-    initial begin
-        $dumpfile("tb_single_cycle_cpu_top.vcd");
-        $dumpvars(0, tb_single_cycle_cpu_top);
-    end
+        // Release reset after 20ns
+        #20 rst = 0;
 
-    // Monitor outputs and internal signals
-    initial begin
-        $display("Time | instr       opcode IsSC   a0        hex_out");
-        $monitor("%4t | 0x%h %3d    %b    0x%h  0x%h", 
+        // Display header
+        $display("time    PC    clk inst_out       sel   addr");
+        // Monitor clk, inst_out, sel, addr each time they change
+        $monitor("%0t    %h    %b    %h    %b    %0d", 
                  $time,
-                 tb_instr,
-                 tb_opcode,
-                 tb_is_syscall,
-                 tb_a0,
-                 tb_hex_out);
-    end
+                 uut.pc,
+                 clk,
+                 inst_out,
+                 uut.inst_mem_mux.sel,
+                 uut.inst_mem_mux.addr
+        );
 
-    // Simulation end
-    initial begin
-        #1000;
-        $display("Simulation finished at %0t ns", $time);
+        // Trigger exception at cycle 38 (optional)
+        repeat (38) @(posedge clk);
+        expSrc0 = 1;
+        @(posedge clk) expSrc0 = 0;
+
+        // Run additional cycles, then finish
+        #500;
         $finish;
     end
+
 endmodule
 
