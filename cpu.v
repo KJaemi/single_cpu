@@ -98,9 +98,11 @@ module single_cycle_cpu_top (
         .pc_plus4     (next_pc),
         .pc           (pc)
     );
-wire inst_sel = hasExp | isEret;
+// 올바른 예
+
+
 InstructionMemory inst_mem_mux (
-	.sel(inst_sel),
+	.sel(pc[11]),
         .pc    (pc),
         .instr (instr)
     );
