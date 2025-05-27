@@ -49,7 +49,7 @@ module ALU (
     Subtractor32 sbu (
         .A     (x),
         .B     (y),
-        .Bin   (1'b1),
+        .Bin   (1'b0),
         .Result(diff),
         .CF    (cf_sub),
         .OF    (of_sub)
@@ -60,7 +60,7 @@ module ALU (
         case (sel)
             4'd0:  result = shl_lo;
             4'd1:  result = shr_la;
-            4'd2:  result = shr_lu;
+            04'd2:  result = shr_lu;
             4'd3:  result = mul_lo;
             4'd4:  result = quot;
             4'd5:  result = sum;
@@ -106,7 +106,7 @@ module Adder32 (
     output wire        OF      // Overflow Flag (signed overflow)
 );
     // ?? ?? ??
-    wire [31:0] sum_lo;       // bits [30:0]
+    wire [30:0] sum_lo;       // bits [30:0]
     wire        carry_lo;     // carry from bit 30 to 31
     wire        carry_hi;     // carry out from bit 31
 
@@ -130,34 +130,38 @@ endmodule
 //------------------------------------------------------------------------------
 // 32-bit Subtractor with Borrow-in, Borrow-out (CF) and Overflow (OF) Detection
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// 32-bit Subtractor with Borrow Chain (Logisim-style)
+//------------------------------------------------------------------------------
 module Subtractor32 (
     input  wire [31:0] A,
     input  wire [31:0] B,
-    input  wire        Bin,      // initial borrow-in (usually 1 for two's complement)
+    input  wire        Bin,      // initial borrow-in (usually 1 for two's complement, but treated as 0 if floating)
     output wire [31:0] Result,   // difference output
     output wire        CF,       // Borrow Flag (unsigned underflow)
     output wire        OF        // Overflow Flag (signed overflow)
-	
 );
-    // B ?? ??
-    wire [31:0] Binv = ~B;
-    // ?? ?? ?? (borrow treated as carry)
-    wire [31:0] diff_lo;
-    wire        carry_lo;
-    wire        carry_hi;
+    // Borrow chain across all bits
+    wire [32:0] borrow;
+    assign borrow[0] = Bin;  // initial borrow-in (0 if floating)
 
-    // 0~30?? ?? (A + ~B + Bin)
-    assign {carry_lo, diff_lo} = A[30:0] + Binv[30:0] + Bin;
+    genvar i;
+    generate
+        for (i = 0; i < 32; i = i + 1) begin : BIT_SLICE
+            wire ai = A[i];
+            wire bi = B[i];
+            wire bi_in = borrow[i];
+            // Difference bit: ai - bi - bi_in = ai ^ bi ^ bi_in
+            assign Result[i] = ai ^ bi ^ bi_in;
+            // Borrow-out computation:
+            // borrow-out = (~ai & (bi | bi_in)) | (bi & bi_in)
+            assign borrow[i+1] = (~ai & (bi | bi_in)) | (bi & bi_in);
+        end
+    endgenerate
 
-    // 31?? ??
-    assign {carry_hi, Result[31]} = A[31] + Binv[31] + carry_lo;
-
-    // ?? ??
-    assign Result[30:0] = diff_lo;
-
-    // CF: ??? ??? ????
-    assign CF = carry_hi;
-
-    // OF: ?? ?? ??30->31? 31->out ?? xor
-    assign OF = carry_lo ^ carry_hi;
+    // Final borrow-out is CF
+    assign CF = borrow[32];
+    // Signed overflow: borrow into MSB ^ borrow out of MSB
+    assign OF = borrow[31] ^ borrow[32];
 endmodule
+

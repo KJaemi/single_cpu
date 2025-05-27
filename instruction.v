@@ -1,18 +1,12 @@
 `timescale 1ns/1ps
 
-// --------------------------------------------------
-// Instruction Memory
-//  - PC[10:2] ? word index
-//  - sel ?? ?? ? 0: rom1.hex, 1: rom2.hex
-//  - ?? ??? ??, ? ??? 0 (NOP) ??
-// --------------------------------------------------
 module InstructionMemory (
     input  wire [31:0] pc,    
     input  wire        sel,   
     output reg  [31:0] instr  
 );
 
-    // ?? ?? ? (?? ??)
+   
     localparam DEPTH0 = 336;   // rom1.hex lines
     localparam DEPTH1 =  77;   // rom2.hex lines
 

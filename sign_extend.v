@@ -1,20 +1,20 @@
-
 module SignExtend (
-    input  [15:0] in,         // 16?? immediate ?
-    input         zero_ext,   // ?? ?? ?? ??: 1?? Zero Extend, 0?? Sign Extend
-    output [31:0] out         // ??? 32?? ??
+    input  wire [15:0] imm16,       // 16-bit immediate input
+    input  wire        sel_zero,    // 1: zero-extend, 0: sign-extend
+    output wire [31:0] imm32        // 32-bit extended output
 );
 
-    wire [31:0] sign_extended;
-    wire [31:0] zero_extended;
+    // Internal extension wires
+    wire [31:0] w_signext;          // sign-extended version
+    wire [31:0] w_zeroext;          // zero-extended version
 
-    // Sign Extension: in[15]? 16? ???? ?? 16??? ??
-    assign sign_extended = {{16{in[15]}}, in};
+    // Perform sign-extension
+    assign w_signext = {{16{imm16[15]}}, imm16};
 
-    // Zero Extension: ?? 16??? 0?? ??
-    assign zero_extended = {16'b0, in};
+    // Perform zero-extension
+    assign w_zeroext = {16'b0, imm16};
 
-    // ?? ??? ?? ?? ??
-    assign out = zero_ext ? zero_extended : sign_extended;
+    // Select between sign- and zero-extension
+    assign imm32 = sel_zero ? w_zeroext : w_signext;
 
 endmodule

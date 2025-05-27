@@ -137,11 +137,15 @@ module Registers(
     end
 
     // Dout mux
-    assign Dout = (sel==2'd0)? epc :
-                  (sel==2'd1)? status :
-                  (sel==2'd2)? block :
-                                cause;
+  
+	assign Dout = (sel==2'd0)? epc :
+              (sel==2'd1)? status :
+              (sel==2'd2)? block :
+              (sel==2'd3)? cause :
+                           32'b0;
+
 endmodule
+
 
 //------------------------------------------------------------------------------
 // CP0 Top Module: integrates SignalDecode, Registers, ExceptionSignals

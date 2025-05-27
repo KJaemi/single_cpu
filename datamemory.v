@@ -1,29 +1,32 @@
-
-
 module DataMemory (
     input  wire        clk,
     input  wire        MemRead,
     input  wire        MemWrite,
-    input  wire [31:0] addr,     // ?? (byte ??)
-    input  wire [31:0] WD,       // Write Data
-    output reg  [31:0] RD        // Read Data
+    input  wire [31:0] addr,     // byte address
+    input  wire [31:0] WD,       // write data
+    output reg  [31:0] RD        // read data
 );
 
-    // ??? ???: 1024?? ?? (4KB ???)
-    reg [31:0] mem [0:1023];
+    // ?? ?? ?? (?? ???)
+    wire [9:0] word_addr = addr[11:2];
 
-    // Read: ???
-    always @(*) begin
-        if (MemRead)
-            RD = mem[addr[11:2]];  // word ?? ?? ??
-        else
-            RD = 32'h00000000;
+    // ??? ??: 1024 words (4KB)
+    reg [31:0] memory_array [0:1023];
+
+    // ??? ??: ?? ?? ????
+    always @(posedge clk) begin
+        if (MemWrite) begin
+            memory_array[word_addr] <= WD;
+        end
     end
 
-    // Write: ?? ?????? ??
-    always @(posedge clk) begin
-        if (MemWrite)
-            mem[addr[11:2]] <= WD;  // word ?? ??
+    // ??? ??: ?? ???
+    always @(*) begin
+        if (MemRead) begin
+            RD = memory_array[word_addr];
+        end else begin
+            RD = 32'h00000000;
+        end
     end
 
 endmodule

@@ -4,7 +4,7 @@ module SyscallDecoderFull (
     input  wire [7:0]  v0,           // syscall code
     input  wire [31:0] a0,           // argument register
     output wire        halt,         // true when enable and v0 == 10
-    output reg  [31:0] hex_out       // capture a0 on enable at posedge clk
+    output reg  [31:0] hex_out = 32'b0  // initialize to zero
 );
 
     // Halt when enabled and v0 equals 10

@@ -69,7 +69,7 @@ module single_cycle_cpu_top (
     // Expose syscall for testbench
     assign is_syscall_out = IsSyscall;
 
-    ControlUnit control (
+ControlUnit control (
         .OpCode(opcode_out),
         .Funct(instr[5:0]),
         .IsJAL(IsJAL),
@@ -90,7 +90,7 @@ module single_cycle_cpu_top (
         .ReadRs(),
         .ReadRt(),
         .ALUOp(ALUOp)
-    );
+    ); 
 
     // Program Counter Instance
     PC pc_inst (
@@ -130,10 +130,10 @@ module single_cycle_cpu_top (
     // Sign Extend Immediate and Shift Amount
     wire [31:0] signimm;
     SignExtend sign_ext (
-        .in(instr[15:0]),
-        .zero_ext(ZeroExtend),
-        .out(signimm)
-    );
+        .imm16(instr[15:0]),
+        .sel_zero(ZeroExtend),
+        .imm32(signimm)
+    ); 
     wire [4:0] shamt = instr[10:6];
 
     // ALU Input Selection
