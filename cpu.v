@@ -194,21 +194,19 @@ InstructionMemory inst_mem_mux (
 
     // Write-Back MUX: JAL, CP0, MEM, ALU
     wire [31:0] alu_or_mem = MemtoReg ? mem_data : alu_result;
-    assign write_data = IsJAL   ? pc_plus4 :
-                        IsCOP0  ? Dout    :
-                                  alu_or_mem;
+ assign write_data = IsCOP0 ? Dout : IsJAL ? pc_plus4 : alu_or_mem;
 
-    // Syscall Decoder Full
-    wire halt;
-    SyscallDecoderFull syscall_unit (
-        .clk     (clk),
-        .enable  (IsSyscall),
-        .v0      (v0[7:0]),
-        .a0      (a0),
-        .halt    (halt),
-        .hex_out (hex_out)
-    );
 
+
+// 3) SyscallDecoderFull 인스턴스
+SyscallDecoderFull u_syscall_dec (
+    .clk     (clk),
+    .enable  (IsSyscall),    // ← 여기 IsSyscall → resultValid
+    .v0      (v0[7:0]),        // $v0 코드
+    .a0      (a0),    // ← 여기 a0 → displayData
+    .halt    (halt),
+    .hex_out (hex_out)
+);
     // Branch Logic
     wire [31:0] branch_target;
     Adder32 branch_adder (
@@ -219,7 +217,7 @@ InstructionMemory inst_mem_mux (
         .CF    (),
         .OF    ()
     );
-    wire [31:0] pc_branch = Branch && ((~BneOrBeq && equal) || (BneOrBeq && ~equal))
+    wire [31:0] pc_branch = Branch && (BneOrBeq ^ equal)
                              ? branch_target
                              : pc_plus4;
 

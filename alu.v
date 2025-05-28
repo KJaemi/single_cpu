@@ -49,7 +49,7 @@ module ALU (
     Subtractor32 sbu (
         .A     (x),
         .B     (y),
-        .Bin   (1'b0),
+	.Bin (1'b0),
         .Result(diff),
         .CF    (cf_sub),
         .OF    (of_sub)
@@ -60,7 +60,7 @@ module ALU (
         case (sel)
             4'd0:  result = shl_lo;
             4'd1:  result = shr_la;
-            04'd2:  result = shr_lu;
+            4'd2:  result = shr_lu;
             4'd3:  result = mul_lo;
             4'd4:  result = quot;
             4'd5:  result = sum;
@@ -134,34 +134,39 @@ endmodule
 // 32-bit Subtractor with Borrow Chain (Logisim-style)
 //------------------------------------------------------------------------------
 module Subtractor32 (
-    input  wire [31:0] A,
-    input  wire [31:0] B,
-    input  wire        Bin,      // initial borrow-in (usually 1 for two's complement, but treated as 0 if floating)
-    output wire [31:0] Result,   // difference output
-    output wire        CF,       // Borrow Flag (unsigned underflow)
-    output wire        OF        // Overflow Flag (signed overflow)
+    input  wire [31:0] A,       // minuend
+    input  wire [31:0] B,       // subtrahend
+    input  wire        Bin,     // initial borrow-in
+    output wire [31:0] Result,  // difference output
+    output wire        CF,      // Borrow Flag (unsigned underflow)
+    output wire        OF       // Overflow Flag (signed overflow)
 );
-    // Borrow chain across all bits
-    wire [32:0] borrow;
-    assign borrow[0] = Bin;  // initial borrow-in (0 if floating)
 
+    // 중간 borrow 신호 (bit-0부터 bit-32까지 총 33비트)
+    wire [32:0] borrow;
+
+    // 초기 borrow-in
+    assign borrow[0] = Bin;
+
+    // bit-wise difference 및 borrow 계산
     genvar i;
     generate
-        for (i = 0; i < 32; i = i + 1) begin : BIT_SLICE
-            wire ai = A[i];
-            wire bi = B[i];
-            wire bi_in = borrow[i];
-            // Difference bit: ai - bi - bi_in = ai ^ bi ^ bi_in
-            assign Result[i] = ai ^ bi ^ bi_in;
-            // Borrow-out computation:
-            // borrow-out = (~ai & (bi | bi_in)) | (bi & bi_in)
-            assign borrow[i+1] = (~ai & (bi | bi_in)) | (bi & bi_in);
-        end
+      for (i = 0; i < 32; i = i + 1) begin : bit_sub
+        // 차(difference) = A ⊕ B ⊕ borrow_in
+        assign Result[i] = A[i] ^ B[i] ^ borrow[i];
+
+        // borrow_out = (~A & B) | ((~A | B) & borrow_in)
+        assign borrow[i+1] = (~A[i] & B[i]) 
+                           | ((~A[i] | B[i]) & borrow[i]);
+      end
     endgenerate
 
-    // Final borrow-out is CF
+    // 최종 borrow-out을 CF로 사용 (unsigned underflow 표시)
     assign CF = borrow[32];
-    // Signed overflow: borrow into MSB ^ borrow out of MSB
-    assign OF = borrow[31] ^ borrow[32];
-endmodule
 
+    // signed overflow: 부호비트를 기준으로 A와 B의 부호가 다르고
+    // 결과 부호가 A의 부호와 다를 때
+    assign OF = ( A[31] & ~B[31] & ~Result[31] )
+              | ( ~A[31] &  B[31] &  Result[31] );
+
+endmodule

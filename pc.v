@@ -1,29 +1,25 @@
 module PC (
-    input clk,
-    input rst,
-    input hasExp,
-    input isEret,
-    input isCOP0,
-    input [31:0] cp0_target_addr,
-    input [31:0] pc_plus4,
-    output reg [31:0] pc
+    input  wire        clk,
+    input  wire        rst,
+    input  wire        hasExp,
+    input  wire        isEret,
+    input  wire        isCOP0,
+    input  wire [31:0] cp0_target_addr,
+    input  wire [31:0] pc_plus4,
+    output reg  [31:0] pc
 );
-    // ?? ??? ?? ?? ??
     localparam [31:0] EXCEPTION_ADDR = 32'h00000800;
 
-    wire and_cop0_eret = isCOP0 && isEret;
-    wire [31:0] mux2_out = and_cop0_eret ? cp0_target_addr : pc_plus4;
-    wire [31:0] mux1_out = ~hasExp ? mux2_out : EXCEPTION_ADDR;
+    // 예외→ERET→기본 흐름 우선순위로 next_pc 결정
+    wire [31:0] next_pc = hasExp                     ? EXCEPTION_ADDR   :
+                          (isCOP0 && isEret)        ? cp0_target_addr  :
+                                                       pc_plus4;
 
-    // ?? ?? MUX
-    wire clk_sel = hasExp || and_cop0_eret;
-    wire gated_clk = clk_sel ? ~clk : clk;
-
-    always @(posedge gated_clk or posedge rst) begin
-        if (rst)
-            pc <= 32'h00000000; // ?? PC ?
-        else
-            pc <= mux1_out;
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            pc <= 32'h00000000;
+        end else begin
+            pc <= next_pc;  // 항상 clk에 동기되어, next_pc만 바뀔 뿐
+        end
     end
 endmodule
-
